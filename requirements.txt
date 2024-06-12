@@ -3,3 +3,5 @@ langchain-community
 langchainhub
 chromadb
 bs4 
+Ipython 
+Jupyter
