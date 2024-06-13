@@ -8,4 +8,4 @@
 2. create venv `python -m venv venv` and `venv/Scripts/activate`
 3. `pip install -r requirements.txt`
 4. `ollama pull nomic-embed-text`
-5. `python RAG.py`
+5. `python RAG.py` to try web loader or `python pdf_RAG.py` for pdf loader

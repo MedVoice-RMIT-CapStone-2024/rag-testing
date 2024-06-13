@@ -58,7 +58,7 @@ def query_model(question: str):
     return {"question": question, "answer": answer}
 
 # Example usage
-file_path = "C:/Users/ADMIN/Downloads/update-28-covid-19-what-we-know.pdf"
+file_path = "./update-28-covid-19-what-we-know.pdf"
 print(index_pdf(file_path))
 
 question = "What is Covid 19?"
