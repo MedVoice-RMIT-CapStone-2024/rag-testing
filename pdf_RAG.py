@@ -10,8 +10,9 @@ import os
 
 def index_pdf(file_path):
     # Initialize the Local Model
+    global llm
     llm = Ollama(model="llama3", temperature=0)
-    
+
     # Indexing: Load
     loader = PyPDFLoader(file_path)
     docs = loader.load()
@@ -54,8 +55,9 @@ def index_pdf(file_path):
 def query_model(question: str):
     if 'rag_chain' not in globals():
         return {"error": "No documents have been indexed yet."}
+    answer_0 = llm.invoke(question)
     answer = rag_chain.invoke(question)
-    return {"question": question, "answer": answer}
+    return {"question": question, "answer before RAG": answer_0}, {"question": question, "answer after RAG": answer}
 
 # Example usage
 file_path = "./update-28-covid-19-what-we-know.pdf"
