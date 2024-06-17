@@ -162,3 +162,4 @@ cython_debug/
 ngrok.yml
 google-credentials.json
 rag_chatbot
+ssh_auth.sh
