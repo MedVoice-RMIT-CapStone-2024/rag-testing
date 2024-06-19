@@ -108,15 +108,17 @@ def index_pdf(file_path):
 async def query_model(question: str):
     if 'rag_chain' not in globals():
         return "No documents have been indexed yet."
-    
-    if await evaluate_safety(question) == "unsafe":
-        return "Sorry, I cannot answer this question, please try again"
-    
-    start_time = time.perf_counter()
-    answer = rag_chain.invoke(question)
-    end_time = time.perf_counter()
 
-    print(f"\nRaw output runtime: {end_time - start_time} seconds\n")
+    if await evaluate_safety(question) == " unsafe":
+        answer="Sorry, I cannot answer this question, please try again"
+        print(answer)
+    else:
+        start_time = time.perf_counter()
+        answer = rag_chain.invoke(question)
+        end_time = time.perf_counter()
+
+        print(f"\nRaw output runtime: {end_time - start_time} seconds\n")
+    
     return answer
 
 
@@ -125,13 +127,15 @@ def similar(a, b):
 
 # Example usage
 file_path = "./update-28-covid-19-what-we-know.pdf"
-print(json.dumps(index_pdf(file_path), indent=4))
+print(index_pdf(file_path)["message"])
 
 # Interactive RAG System
 conversation_state = {}
 while True:
     question = input("Please enter your question or type 'exit' to end the conversation: ")
     if question.lower() == 'exit':
+        conversation_state = {}
+        print("Ending the current conversation...")
         break
     elif question.lower() == 'new':
         conversation_state = {}
@@ -146,9 +150,8 @@ while True:
                 break
 
         if similar_question:
-            print(conversation_state[similar_question])
+            print(f"As per my previous answer: {conversation_state[similar_question]}")
         else:
             # Use asyncio.run to run the coroutine and get the result
             answer = asyncio.run(query_model(question))
             conversation_state[question] = answer
-            print(answer)
