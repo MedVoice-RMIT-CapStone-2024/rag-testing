@@ -17,6 +17,7 @@ import os
 import json
 import time
 import replicate
+import asyncio
 
 load_dotenv()
 # Get the API token from environment variable
@@ -147,6 +148,7 @@ while True:
         if similar_question:
             print(conversation_state[similar_question])
         else:
-            response = query_model(question)
-            conversation_state[question] = response
-            print(response)
+            # Use asyncio.run to run the coroutine and get the result
+            answer = asyncio.run(query_model(question))
+            conversation_state[question] = answer
+            print(answer)
