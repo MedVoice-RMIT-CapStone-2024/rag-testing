@@ -1,28 +1,14 @@
-from langchain.chains import LLMChain
-from langchain_community.llms import Replicate
-from langchain_core.prompts import PromptTemplate
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from langchain_community.document_loaders import PyPDFLoader 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-from langchain import hub 
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.llms import Ollama
-from difflib import SequenceMatcher
+import replicate
+import os
 from dotenv import load_dotenv
 
-import os
-import json
-import time
-import replicate
-
 load_dotenv()
+
 # Get the API token from environment variable
 REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 
-async def evaluate_safety(user_question) -> str:
+# Define a function to evaluate the safety of a user's question
+def evaluate_safety(user_question) -> str:
     output = replicate.run(
         "tomasmcm/llamaguard-7b:86a2d8b79335b1557fc5709d237113aa34e3ae391ee46a68cc8440180151903d",
         input={
@@ -37,116 +23,11 @@ async def evaluate_safety(user_question) -> str:
     )
     return output
 
-def initialize_llm() -> Replicate:
-    # Initialize the Replicate instance
-    llm = Replicate(
-        streaming=True,
-        callbacks=[StreamingStdOutCallbackHandler()],
-        model="meta/meta-llama-3-70b-instruct",
-        model_kwargs= {
-            "top_k": 0,
-            "top_p": 0.9,
-            "max_tokens": 512,
-            "min_tokens": 0,
-            "temperature": 0.6,
-            "length_penalty": 1,
-            "stop_sequences": "<|end_of_text|>,<|eot_id|>",
-            "presence_penalty": 1.15,
-            "log_performance_metrics": False
-        },
-    )
-    return llm
-
-def index_pdf(file_path):
-    # Initialize the Local Model
-    global llm
-    llm = initialize_llm()
-
-    # Indexing: Load
-    loader = PyPDFLoader(file_path)
-    docs = loader.load()
-
-    # Indexing: Split
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        add_start_index=True,
-    )
-    all_splits = text_splitter.split_documents(docs)
-
-    # Indexing: Store
-    embedding = OllamaEmbeddings(model="nomic-embed-text")
-    vectorstore = Chroma.from_documents(
-        documents=all_splits,
-        embedding=embedding,
-    )
-    retriever = vectorstore.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": 6},
-    )
-
-    # Store retriever globally for later use
-    global rag_chain
-    prompt = hub.pull("rlm/rag-prompt")
-
-    def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
-
-    def create_rag_chain():
-        return (
-            {"context": retriever | format_docs, "question": RunnablePassthrough()}
-            | prompt
-            | llm 
-            | StrOutputParser()
-        )
-
-    rag_chain = create_rag_chain()
-    
-    return {"message": "PDF indexed successfully"}
-
-async def query_model(question: str):
-    if 'rag_chain' not in globals():
-        return "No documents have been indexed yet."
-    
-    if await evaluate_safety(question) == "unsafe":
-        return "Sorry, I cannot answer this question, please try again"
-    
-    start_time = time.perf_counter()
-    answer = rag_chain.invoke(question)
-    end_time = time.perf_counter()
-
-    print(f"\nRaw output runtime: {end_time - start_time} seconds\n")
-    return answer
-
-
-def similar(a, b):
-    return SequenceMatcher(None, a, b).ratio()
-
-# Example usage
-file_path = "./update-28-covid-19-what-we-know.pdf"
-print(json.dumps(index_pdf(file_path), indent=4))
-
-# Interactive RAG System
-conversation_state = {}
+# Test the function with a user's question
 while True:
     question = input("Please enter your question or type 'exit' to end the conversation: ")
     if question.lower() == 'exit':
         break
-    elif question.lower() == 'new':
-        conversation_state = {}
-        print("Starting a new conversation...")
-        continue
     else:
-        # Check if a similar question has been asked before
-        similar_question = None
-        for prev_question in conversation_state:
-            if similar(prev_question, question) > 0.8:
-                similar_question = prev_question
-                break
-
-        if similar_question:
-            print(conversation_state[similar_question])
-        else:
-            response = query_model(question)
-            conversation_state[question] = response
-            print(response)
+        print("Starting a new conversation...")
+        print(evaluate_safety(question))
