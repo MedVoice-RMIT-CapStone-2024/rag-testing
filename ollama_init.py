@@ -16,7 +16,7 @@ if platform.system() != "Linux":
 
 # Run the commands
 run_command("curl -fsSL https://ollama.com/install.sh | sh")
-run_command("ollama pull nomic-embed-text")
-run_command("ollama pull llama3")
+run_command("ollama serve")
+
 
 print("The script has successfully run the commands.")
